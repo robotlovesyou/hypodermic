@@ -1,0 +1,10 @@
+{
+  "browserify": true,
+  "node": true,
+  "globals": {
+    "mocha": true,
+    "mochaPhantomJSs"
+    "describe": true,
+    "it": true
+  }
+}

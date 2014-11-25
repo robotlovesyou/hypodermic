@@ -1,0 +1,38 @@
+{
+  "name": "hypodermic",
+  "version": "0.0.1",
+  "description": "Dependency Injection for JavaScript",
+  "main": "src/hypodermic.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robotlovesyou/hypodermic.git"
+  },
+  "keywords": [
+    "Dependency",
+    "Injection"
+  ],
+  "author": "Andrew Smith <andy@robotlovesyou.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/robotlovesyou/hypodermic/issues"
+  },
+  "homepage": "https://github.com/robotlovesyou/hypodermic",
+  "devDependencies": {
+    "browserify": "^6.3.3",
+    "browserify-shim": "^3.8.0",
+    "chai": "^1.10.0",
+    "gulp": "^3.8.10",
+    "gulp-mocha": "^2.0.0",
+    "gulp-mocha-phantomjs": "^0.5.1",
+    "gulp-sourcemaps": "^1.2.8",
+    "gulp-webserver": "^0.8.7",
+    "mocha": "^2.0.1",
+    "sinon": "^1.12.1",
+    "sinon-chai": "^2.6.0",
+    "vinyl-source-stream": "^1.0.0"
+  },
+  "dependencies": {}
+}
