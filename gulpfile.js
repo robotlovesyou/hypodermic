@@ -1,5 +1,4 @@
 /* jshint -W097 */
-/* global require: true */
 'use strict';
 var gulp = require('gulp');
 var source = require('vinyl-source-stream');
@@ -7,18 +6,8 @@ var browserify = require('browserify');
 var webserver = require('gulp-webserver');
 var mochaPhantomjs = require('gulp-mocha-phantomjs');
 var mocha = require('gulp-mocha');
-
-/**
- * Pipe errors to the console but do not stop gulp
- * @param {object} error [the error]
- */
-function swallowError (error) {
-
-  //If you want details of the error in the console
-  console.log(error.toString());
-
-  this.emit('end');
-}
+var jshint = require('gulp-jshint');
+var stylish = require('jshint-stylish');
 
 gulp.task('default', ['copy-test-harness', 'webserver', 'watch']);
 
@@ -77,10 +66,19 @@ gulp.task('browser-test', ['mocha-test'], function () {
 /**
  * run tests directly in mocha
  */
-gulp.task('mocha-test', ['browserify-hypodermic', 'browserify-tests'], function () {
+gulp.task('mocha-test', ['lint', 'browserify-hypodermic', 'browserify-tests'], function () {
   return gulp.src('./test/index.js')
     .pipe(mocha());
-})
+});
+
+/**
+ * lint js source files
+ */
+ gulp.task('lint', function() {
+   return gulp.src(['src/**/*.js', 'test/**/*.js', '!test/testBundle.js'])
+   .pipe(jshint())
+   .pipe(jshint.reporter(stylish));
+ });
 
 /**
  * copy a file from/to
@@ -95,4 +93,4 @@ function copy(from, to) {
  */
 gulp.task('copy-test-harness', function () {
   return copy('./test/index.html', './dist/index.html');
-})
+});
