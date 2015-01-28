@@ -7,8 +7,10 @@ function HypodermicError(message) {
   this.message = message || 'Mysterious Hypodermic error message';
 }
 
+
 HypodermicError.prototype = new Error();
 HypodermicError.prototype.constructor = HypodermicError;
+
 
 function Container(map) {
   if(arguments.length === 0) {
@@ -22,17 +24,46 @@ function Container(map) {
   this._registerModules(map);
 }
 
+
 Container.prototype._registerModules = function (map) {
   this._modules = {};
 
   Object.keys(map).forEach(function(key) {
-    this._modules[key] = {};
+    this._modules[key] = new Module(key, map[key]);
   }.bind(this));
 };
 
-Container.prototype.run = function () {
+Container.prototype._getModule = function(name) {
+  if(this._modules.hasOwnProperty(name)) {
+    return this._modules[name];
+  }
 
+  throw new HypodermicError('No module "' + name + '" found.');
 };
+
+Container.prototype._resolveFactory = function (module) {
+  return module.factory
+  .call(undefined, this._resolveDependencies(module.dependencies));
+};
+
+Container.prototype._resolveDependencies = function (dependencies) {
+  return dependencies.map(function(dependency) {
+    return this.resolve(dependency);
+  }.bind(this));
+};
+
+
+Container.prototype.run = function () {
+};
+
+Container.prototype.resolve = function (name) {
+  if(this._getModule(name).isValueModule) {
+    return this._getModule(name).value;
+  }
+
+  return this._resolveFactory(this._getModule(name));
+};
+
 
 function Module(name, moduleObject) {
   if(typeof name !== 'string') {
@@ -57,15 +88,58 @@ function Module(name, moduleObject) {
     this._factory = moduleObject.factory;
   }
 
+  this._name = name;
+  this._resoltionDepth = 0;
+  this._defineProperties();
+
+
 }
+
+Module.prototype._defineProperties = function () {
+  Object.defineProperties(this, {
+    name: {
+      get: function () {
+        return this._name;
+      }
+    },
+    value: {
+      get: function () {
+        return this._originalValue;
+      }
+    },
+    dependencies: {
+      get: function () {
+        return this._dependencies.slice();
+      }
+    },
+    factory: {
+      get: function () {
+        return this._factory;
+      }
+    },
+    isValueModule: {
+      get: function () {
+        return this._isValueModule();
+      }
+    },
+    isFactoryModule: {
+      get: function () {
+        return this._isFactoryModule();
+      }
+    }
+  });
+};
+
 
 Module.prototype._isValueModule = function () {
   return this.hasOwnProperty('_originalValue');
 };
 
+
 Module.prototype._isFactoryModule = function () {
   return !this._isValueModule();
 };
+
 
 Module.prototype._validateModuleObject = function (moduleObject) {
   //the module object has a value property
@@ -80,6 +154,7 @@ Module.prototype._validateModuleObject = function (moduleObject) {
   );
 };
 
+
 Module.prototype._copyValue = function (value) {
   if(this._isPlainObject(value)) {
     return this._deepCopyObject(value);
@@ -87,6 +162,7 @@ Module.prototype._copyValue = function (value) {
 
   return value;
 };
+
 
 Module.prototype._deepCopyObject = function (object) {
   var copy = {};
@@ -98,8 +174,9 @@ Module.prototype._deepCopyObject = function (object) {
   return copy;
 };
 
+
 Module.prototype._deepCopyValue = function(value) {
-  if(typeof value === 'object' && value.constructor === Object) {
+  if(this._isPlainObject(value)) {
     return this._deepCopyObject(value);
   } else if (Array.isArray(value)) {
     return value.slice();
@@ -109,15 +186,33 @@ Module.prototype._deepCopyValue = function(value) {
 
 };
 
+
 Module.prototype._isPlainObject = function (object) {
   return typeof object === 'object' && object.constructor === Object;
 };
 
-Module.prototype.resolve = function () {
-  if (this._isValueModule()) {
-    return this._originalValue;
-  }
+Module.prototype._factoryIsResolved = function () {
+  return this.hasOwnProperty('_resolvedFactory');
 };
+
+
+// Module.prototype.resolve = function () {
+//   if (this._isValueModule()) {
+//     return this._originalValue;
+//   }
+//
+//   if
+//
+//   if (this._resolutionDepth > 0) {
+//     throw new HypodermicError('Circular Dependency detected in:' + this._name);
+//   }
+//
+//
+//
+//   this._resolutionDepth += 1;
+//
+//   this._resolutionDepth = 0;
+// };
 
 
 module.exports = {

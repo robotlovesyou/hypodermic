@@ -126,10 +126,71 @@ describe('Container Instance', function () {
     expect((new Container({})).run).to.exist;
     expect((new Container({})).run).to.be.a.function;
   });
+
+  it('exposes a function "resolve"', function () {
+    expect((new Container({})).resolve).to.exist;
+    expect((new Container({})).resolve).to.be.a.function;
+  });
 });
 
 describe('Container#run', function () {
 
+});
+
+describe('Container#resolve', function () {
+  var valueModule, value, container;
+
+  beforeEach(function () {
+    value = 'wibble';
+    container = new Container({
+      myValue: {
+        value: value
+      },
+      myFactory: {
+        dependencies: [],
+        factory: function () {return 'factoryWibble';}
+      },
+      myFactoryWithDependencies: {
+        dependencies: ['myValue'],
+        factory: function (myValue) {
+          return 'The value is ' + myValue;
+        }
+      },
+      myFactoryWithFactoryDependencies: {
+        dependencies: ['myFactoryWithDependencies'],
+        factory: function (myFactoryWithDependencies) {
+          return 'I say "' + myFactoryWithDependencies + '".';
+        }
+      }
+    });
+  });
+
+  it('takes a single argument', function () {
+    expect(container.resolve).to.have.length(1);
+  });
+
+  describe('Value Modules', function () {
+    it('returns a copy of the value supplied to the module', function () {
+      expect(container.resolve('myValue')).to.equal(value);
+    });
+  });
+
+  describe('Factory Modules', function () {
+    it('returns the result of running the factory function', function () {
+      expect(container.resolve('myFactory')).to.equal('factoryWibble');
+    });
+
+    it('supplies the dependcy values to the factory function', function () {
+      expect(container.resolve('myFactoryWithDependencies'))
+      .to.equal('The value is wibble');
+    });
+
+    it('supplies the dependencies to the dependencies of the factory',
+    function () {
+      expect(container.resolve('myFactoryWithFactoryDependencies'))
+      .to.equal('I say "The value is wibble".');
+    });
+  });
 });
 
 describe('Module', function () {
@@ -200,28 +261,35 @@ describe('Module', function () {
     new Module('aName', {value: new HypodermicError()});
   });
 
-  it('constructors a module if dependencies is an array and ' +
+  it('constructs a module if dependencies is an array and ' +
   'factory is a function', function () {
-    this.timeout(60000);
     new Module('aName', {dependencies:[], factory: function () {}});
   });
 
 });
 
 describe('Module instances', function () {
-  var module;
+  var module, factoryModule;
 
   beforeEach(function () {
     module = new Module('aName', {value: 'wibble'});
   });
 
-  it('exposes a function "resolve"', function () {
-    expect(module.resolve).to.be.a('function');
+  it('exposes a property "value"', function () {
+    expect(module.hasOwnProperty('value')).to.equal(true);
+  });
+
+  it('exposes a property "dependencies"', function () {
+    expect(module.hasOwnProperty('dependencies')).to.equal(true);
+  });
+
+  it('exposes a property "factory"', function () {
+    expect(module.hasOwnProperty('factory')).to.equal(true);
   });
 
 });
 
-describe('Module#resolve', function () {
+describe('Module#value', function () {
 
   var stringValueModule, numberValueModule, boolValueModule,
   functionValueModule, objectValueModule, objectModuleValue,
@@ -258,12 +326,12 @@ describe('Module#resolve', function () {
   });
 
   it('returns a copy of the value for a value module', function () {
-    expect(stringValueModule.resolve()).to.equal('hello');
-    expect(numberValueModule.resolve()).to.equal(123);
-    expect(boolValueModule.resolve()).to.equal(true);
-    expect(functionValueModule.resolve()()).to.equal('hello function');
-    expect(objectValueModule.resolve()).to.deep.equal(objectModuleValue);
-    expect(constructedObjectValueModule.resolve()).to.equal(
+    expect(stringValueModule.value).to.equal('hello');
+    expect(numberValueModule.value).to.equal(123);
+    expect(boolValueModule.value).to.equal(true);
+    expect((functionValueModule.value)()).to.equal('hello function');
+    expect(objectValueModule.value).to.deep.equal(objectModuleValue);
+    expect(constructedObjectValueModule.value).to.equal(
       constructedObjectModuleValue);
   });
 
@@ -271,9 +339,53 @@ describe('Module#resolve', function () {
     objectModuleValue.property1 = 'wibble';
     objectModuleValue.property3.monday = 'Nope';
 
-    expect(objectValueModule.resolve().property1).to.equal('Hello');
-    expect(objectValueModule.resolve().property3.monday).to.equal('Monday');
+    expect(objectValueModule.value.property1).to.equal('Hello');
+    expect(objectValueModule.value.property3.monday).to.equal('Monday');
   });
+});
+
+describe('Module#dependencies', function () {
+  var dependencies, factoryModule;
+
+  beforeEach(function () {
+    dependencies = ['a', 'b', 'c', 'd'];
+
+    factoryModule = new Module('aName',
+      {
+        dependencies: dependencies,
+        factory: function () {}
+      }
+    );
+
+  });
+
+  it('returns a list of dependencies provided to the constructor', function () {
+    expect(factoryModule.dependencies[0]).to.equal('a');
+    expect(factoryModule.dependencies[1]).to.equal('b');
+  });
+
+  it('returns a copy and not the original list', function () {
+    dependencies[2] = 'x';
+    dependencies[3] = 'y';
+
+    expect(factoryModule.dependencies).not.to.deep.equal(dependencies);
+  });
+
+  it('returns a fresh copy each time', function () {
+    expect(factoryModule.dependencies).not.to.equal(dependencies);
+  });
+});
+
+describe('Module#factory', function () {
+
+  it('returns the factory function supplied to the constructor', function () {
+    var factoryFunction = function () {};
+    var module = new Module('aName',
+    {dependencies: [], factory: factoryFunction});
+
+    expect(module.factory).to.equal(factoryFunction);
+  });
+
 });
 
 runTests();
