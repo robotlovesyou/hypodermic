@@ -1,6 +1,10 @@
 /* jshint -W097 */
 'use strict';
 
+function makeEmptyMap() {
+  return Object.create(null);
+}
+
 function HypodermicError(message) {
   this.name = 'HypodermicError';
   this.message = message || 'Mysterious Hypodermic error message';
@@ -23,9 +27,26 @@ function Container(map) {
   this._registerModules(map);
 }
 
+Container.prototype._resetResolutionCountMap = function () {
+  this._resolutionCountMap = makeEmptyMap();
+};
+
+Container.prototype._getResolutionCount = function(name) {
+  if (typeof this._resolutionCountMap[name] !== 'undefined') {
+    return this._resolutionCountMap[name];
+  }
+};
+
+Container.prototype._incrementResolutionCount = function(name) {
+  if(typeof this._resolutionCountMap[name] === 'undefined') {
+    this._resolutionCountMap[name] = 0;
+  }
+
+  this._resolutionCountMap[name] += 1;
+};
 
 Container.prototype._registerModules = function (map) {
-  this._modules = {};
+  this._modules = makeEmptyMap();
 
   Object.keys(map).forEach(function(key) {
     this._modules[key] = new Module(key, map[key]);
@@ -33,7 +54,7 @@ Container.prototype._registerModules = function (map) {
 };
 
 Container.prototype._getModule = function(name) {
-  if(this._modules.hasOwnProperty(name)) {
+  if(typeof this._modules[name] !== 'undefined') {
     return this._modules[name];
   }
 
@@ -44,7 +65,7 @@ Container.prototype._resolveFactory = function (module) {
 
   if(!module.isResolved) {
     module.setResolvedFactory(module.factory
-    .call(undefined, this._resolveDependencies(module.dependencies)));
+    .apply(undefined, this._resolveDependencies(module.dependencies)));
   }
 
   return module.resolvedFactory;
@@ -52,20 +73,34 @@ Container.prototype._resolveFactory = function (module) {
 
 Container.prototype._resolveDependencies = function (dependencies) {
   return dependencies.map(function(dependency) {
-    return this.resolve(dependency);
+    return this._resolve(dependency);
   }.bind(this));
 };
 
+Container.prototype._resolve = function(name) {
+  if(this._getResolutionCount(name) > 0) {
+    throw new HypodermicError('Circular dependency detected resolving "' +
+    name + '"');
+  }
 
-Container.prototype.run = function () {
-};
+  this._incrementResolutionCount(name);
 
-Container.prototype.resolve = function (name) {
   if(this._getModule(name).isValueModule) {
     return this._getModule(name).value;
   }
 
   return this._resolveFactory(this._getModule(name));
+};
+
+
+Container.prototype.run = function (dependencies, callback) {
+  this._resetResolutionCountMap();
+  return callback.apply(undefined, this._resolveDependencies(dependencies));
+};
+
+Container.prototype.resolve = function (name) {
+  this._resetResolutionCountMap();
+  return this._resolve(name);
 };
 
 
@@ -93,7 +128,6 @@ function Module(name, moduleObject) {
   }
 
   this._name = name;
-  this._resoltionDepth = 0;
   this._defineProperties();
 
 

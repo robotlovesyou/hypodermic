@@ -134,6 +134,42 @@ describe('Container Instance', function () {
 });
 
 describe('Container#run', function () {
+  var container, wibble, wobble, wobbleFactory, stub;
+
+  beforeEach(function () {
+    wibble = 'wibble';
+    wobble = 'wobble';
+    wobbleFactory = function (wobble) {return 'I like to ' + wobble;};
+
+    container = new Container({
+      wibble: {
+        value: wibble
+      },
+      wobble: {
+        value: wobble
+      },
+      wobbleFactory: {
+        dependencies: ['wobble'],
+        factory: wobbleFactory
+      }
+    });
+
+    stub = sinon.stub();
+  });
+
+  it('should take two arguments', function () {
+    expect(container.run).to.have.length(2);
+  });
+
+  it('runs the provided function', function () {
+    container.run([], stub);
+    expect(stub).to.have.been.called;
+  });
+
+  it('supplies the requested dependencies to the function', function () {
+    container.run(['wibble', 'wobbleFactory'], stub);
+    expect(stub).to.have.been.calledWith(wibble, 'I like to wobble');
+  });
 
 });
 
@@ -166,6 +202,14 @@ describe('Container#resolve', function () {
       counterFactory: {
         dependencies: [],
         factory: function () { return (counter += 1);}
+      },
+      circularOne: {
+        dependencies: ['circularTwo'],
+        factory: function (circularTwo) {}
+      },
+      circularTwo: {
+        dependencies: ['circularOne'],
+        factory: function (circularOne) {}
       }
     });
   });
@@ -199,6 +243,14 @@ describe('Container#resolve', function () {
     it('only resolves the dependency once', function () {
       expect(container.resolve('counterFactory')).to.equal(1);
       expect(container.resolve('counterFactory')).to.equal(1);
+    });
+
+    it('thows a hypodermic error for circular dependencies', function () {
+      var throws = function () {
+        container.resolve('circularOne');
+      };
+
+      expect(throws).to.throw(HypodermicError);
     });
   });
 });
