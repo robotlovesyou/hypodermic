@@ -42,8 +42,13 @@ Container.prototype._getModule = function(name) {
 };
 
 Container.prototype._resolveFactory = function (module) {
-  return module.factory
-  .call(undefined, this._resolveDependencies(module.dependencies));
+
+  if(!module.isResolved) {
+    module.setResolvedFactory(module.factory
+    .call(undefined, this._resolveDependencies(module.dependencies)));
+  }
+
+  return module.resolvedFactory;
 };
 
 Container.prototype._resolveDependencies = function (dependencies) {
@@ -126,6 +131,16 @@ Module.prototype._defineProperties = function () {
       get: function () {
         return this._isFactoryModule();
       }
+    },
+    isResolved: {
+      get: function () {
+        return this.hasOwnProperty('_resolvedFactory');
+      }
+    },
+    resolvedFactory: {
+      get: function () {
+        return this._resolvedFactory;
+      }
     }
   });
 };
@@ -191,29 +206,9 @@ Module.prototype._isPlainObject = function (object) {
   return typeof object === 'object' && object.constructor === Object;
 };
 
-Module.prototype._factoryIsResolved = function () {
-  return this.hasOwnProperty('_resolvedFactory');
+Module.prototype.setResolvedFactory = function (value) {
+  this._resolvedFactory = value;
 };
-
-
-// Module.prototype.resolve = function () {
-//   if (this._isValueModule()) {
-//     return this._originalValue;
-//   }
-//
-//   if
-//
-//   if (this._resolutionDepth > 0) {
-//     throw new HypodermicError('Circular Dependency detected in:' + this._name);
-//   }
-//
-//
-//
-//   this._resolutionDepth += 1;
-//
-//   this._resolutionDepth = 0;
-// };
-
 
 module.exports = {
   Container: Container,

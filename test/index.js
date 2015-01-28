@@ -138,10 +138,11 @@ describe('Container#run', function () {
 });
 
 describe('Container#resolve', function () {
-  var valueModule, value, container;
+  var valueModule, value, container, counter;
 
   beforeEach(function () {
     value = 'wibble';
+    counter = 0;
     container = new Container({
       myValue: {
         value: value
@@ -161,6 +162,10 @@ describe('Container#resolve', function () {
         factory: function (myFactoryWithDependencies) {
           return 'I say "' + myFactoryWithDependencies + '".';
         }
+      },
+      counterFactory: {
+        dependencies: [],
+        factory: function () { return (counter += 1);}
       }
     });
   });
@@ -189,6 +194,11 @@ describe('Container#resolve', function () {
     function () {
       expect(container.resolve('myFactoryWithFactoryDependencies'))
       .to.equal('I say "The value is wibble".');
+    });
+
+    it('only resolves the dependency once', function () {
+      expect(container.resolve('counterFactory')).to.equal(1);
+      expect(container.resolve('counterFactory')).to.equal(1);
     });
   });
 });
