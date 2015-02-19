@@ -28,7 +28,7 @@ if (!Function.prototype.bind) {
 }
 
 
-var hypodermic = require('../src/hypodermic');
+var hypodermic = require('../dist/hypodermic');
 var Container = hypodermic.Container;
 var HypodermicError = hypodermic.HypodermicError;
 var Module = hypodermic.Module;
@@ -104,11 +104,11 @@ describe('Container', function () {
   });
 
   it('throws an error if the argument to Container is missing', function () {
-    expect(Container.bind(this)).to.throw(HypodermicError);
+    expect(Container.bind(this)).to.throw();
   });
 
   it('throws an error if the argument to Container is not an object', function () {
-    expect(Container.bind(this, 123)).to.throw(HypodermicError);
+    expect(Container.bind(this, 123)).to.throw();
   });
 
   it('registers a module object for each module mapped in the' +
@@ -116,8 +116,8 @@ describe('Container', function () {
     var container = new Container(
       {'str': valueModuleString, 'bool': valueModuleBool});
 
-    expect(container._modules.str).to.exist;
-    expect(container._modules.bool).to.exist;
+    expect(container._modules.has('str')).to.be.true;
+    expect(container._modules.has('bool')).to.be.true;
   });
 });
 

@@ -1,6 +1,7 @@
 {
   "browserify": true,
   "node": true,
+  "esnext": true,
   "globals": {
     "mocha": true,
     "mochaPhantomJS": true,

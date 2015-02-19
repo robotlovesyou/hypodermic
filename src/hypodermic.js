@@ -1,107 +1,109 @@
 /* jshint -W097 */
 'use strict';
 
-function makeEmptyMap() {
-  return Object.create(null);
+class HypodermicError extends Error {
+
+  constructor(message) {
+    this.name = 'HypodermicError';
+    this.message = message || 'Mysterious Hypodermic error message';
+  }
 }
 
-function HypodermicError(message) {
-  this.name = 'HypodermicError';
-  this.message = message || 'Mysterious Hypodermic error message';
+class Container {
+
+  constructor(map) {
+    if(arguments.length === 0) {
+      throw new HypodermicError('map argument is required');
+    }
+
+    if(typeof map !== 'object') {
+      throw new HypodermicError('map argument must be an object');
+    }
+
+    this._registerModules(map);
+  }
+
+
+  _resetResolutionCountMap() {
+    this._resolutionCountMap = new Map();
+  }
+
+
+  _getResolutionCount(name) {
+    return this._resolutionCountMap.has(name) ?
+      this._resolutionCountMap.get(name) : 0;
+  }
+
+
+  _incrementResolutionCount(name) {
+    this._resolutionCountMap.set(name, this._getResolutionCount() + 1);
+  }
+
+
+  _registerModules(map) {
+    this._modules = new Map();
+
+    Object.keys(map).forEach((key) => {
+      this._modules.set(key, new Module(key, map[key]));
+    });
+  }
+
+
+  _getModule(name) {
+    if(this._modules.has(name)) {
+      return this._modules.get(name);
+    }
+
+    throw new HypodermicError('No module "' + name + '" found.');
+  }
+
+
+  _resolveFactory(module) {
+
+    if(!module.isResolved) {
+      module.setResolvedFactory(module.factory
+      .apply(undefined, this._resolveDependencies(module.dependencies)));
+    }
+
+    return module.resolvedFactory;
+  }
+
+
+  _resolveDependencies(dependencies) {
+    return dependencies.map(function(dependency) {
+      return this._resolve(dependency);
+    }.bind(this));
+  }
+
+
+  _resolve(name) {
+    if(this._getResolutionCount(name) > 0) {
+      throw new HypodermicError('Circular dependency detected resolving "' +
+      name + '"');
+    }
+
+    this._incrementResolutionCount(name);
+
+    if(this._getModule(name).isValueModule) {
+      return this._getModule(name).value;
+    }
+
+    return this._resolveFactory(this._getModule(name));
+  }
+
+
+  run(dependencies, callback) {
+    this._resetResolutionCountMap();
+    return callback.apply(undefined, this._resolveDependencies(dependencies));
+  }
+
+
+  resolve(name) {
+    this._resetResolutionCountMap();
+    return this._resolve(name);
+  }
+  
 }
-
-
-HypodermicError.prototype = new Error();
-HypodermicError.prototype.constructor = HypodermicError;
-
-
-function Container(map) {
-  if(arguments.length === 0) {
-    throw new HypodermicError('map argument is required');
-  }
-
-  if(typeof map !== 'object') {
-    throw new HypodermicError('map argument must be an object');
-  }
-
-  this._registerModules(map);
-}
-
-Container.prototype._resetResolutionCountMap = function () {
-  this._resolutionCountMap = makeEmptyMap();
-};
-
-Container.prototype._getResolutionCount = function(name) {
-  if (typeof this._resolutionCountMap[name] !== 'undefined') {
-    return this._resolutionCountMap[name];
-  }
-};
-
-Container.prototype._incrementResolutionCount = function(name) {
-  if(typeof this._resolutionCountMap[name] === 'undefined') {
-    this._resolutionCountMap[name] = 0;
-  }
-
-  this._resolutionCountMap[name] += 1;
-};
-
-Container.prototype._registerModules = function (map) {
-  this._modules = makeEmptyMap();
-
-  Object.keys(map).forEach(function(key) {
-    this._modules[key] = new Module(key, map[key]);
-  }.bind(this));
-};
-
-Container.prototype._getModule = function(name) {
-  if(typeof this._modules[name] !== 'undefined') {
-    return this._modules[name];
-  }
-
-  throw new HypodermicError('No module "' + name + '" found.');
-};
-
-Container.prototype._resolveFactory = function (module) {
-
-  if(!module.isResolved) {
-    module.setResolvedFactory(module.factory
-    .apply(undefined, this._resolveDependencies(module.dependencies)));
-  }
-
-  return module.resolvedFactory;
-};
-
-Container.prototype._resolveDependencies = function (dependencies) {
-  return dependencies.map(function(dependency) {
-    return this._resolve(dependency);
-  }.bind(this));
-};
-
-Container.prototype._resolve = function(name) {
-  if(this._getResolutionCount(name) > 0) {
-    throw new HypodermicError('Circular dependency detected resolving "' +
-    name + '"');
-  }
-
-  this._incrementResolutionCount(name);
-
-  if(this._getModule(name).isValueModule) {
-    return this._getModule(name).value;
-  }
-
-  return this._resolveFactory(this._getModule(name));
-};
-
-
-Container.prototype.run = function (dependencies, callback) {
-  this._resetResolutionCountMap();
-  return callback.apply(undefined, this._resolveDependencies(dependencies));
-};
-
-Container.prototype.resolve = function (name) {
-  this._resetResolutionCountMap();
-  return this._resolve(name);
-};
 
 
 function Module(name, moduleObject) {

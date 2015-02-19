@@ -3,6 +3,7 @@
 var gulp = require('gulp');
 var source = require('vinyl-source-stream');
 var browserify = require('browserify');
+var babel = require('gulp-babel');
 var webserver = require('gulp-webserver');
 var mochaPhantomjs = require('gulp-mocha-phantomjs');
 var mocha = require('gulp-mocha');
@@ -12,14 +13,13 @@ var stylish = require('jshint-stylish');
 gulp.task('default', ['copy-test-harness', 'webserver', 'watch']);
 
 /**
- * Compile for the browser using browserify
+ * Compile using babel
  */
 
-gulp.task('browserify-hypodermic', function () {
+gulp.task('babel-hypodermic', function () {
 
-  return browserify('./src/hypodermic.js')
-    .bundle()
-    .pipe(source('hypodermic.js'))
+  return gulp.src('src/hypodermic.js')
+    .pipe(babel({optional: ["selfContained"]}))
     .pipe(gulp.dest('./dist/'));
 });
 
@@ -27,7 +27,7 @@ gulp.task('browserify-hypodermic', function () {
  * Compile test script using browserify
  */
 
-gulp.task('browserify-tests', function () {
+gulp.task('browserify-tests', ['babel-hypodermic'], function () {
   return browserify('./test/index.js', {debug: true})
     .bundle()
     .pipe(source('testBundle.js'))
@@ -66,7 +66,7 @@ gulp.task('browser-test', ['mocha-test'], function () {
 /**
  * run tests directly in mocha
  */
-gulp.task('mocha-test', ['lint', 'browserify-hypodermic', 'browserify-tests'], function () {
+gulp.task('mocha-test', ['lint', 'browserify-tests'], function () {
   return gulp.src('./test/index.js')
     .pipe(mocha());
 });
