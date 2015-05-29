@@ -2,7 +2,7 @@
   "name": "hypodermic",
   "version": "0.1.0",
   "description": "Dependency Injection for JavaScript",
-  "main": "src/hypodermic.js",
+  "main": "dist/hypodermic.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -25,7 +25,7 @@
     "browserify": "^6.3.3",
     "browserify-shim": "^3.8.0",
     "chai": "^1.10.0",
-    "gulp": "^3.8.10",
+    "gulp": "^3.8.11",
     "gulp-babel": "^4.0.0",
     "gulp-jshint": "^1.9.0",
     "gulp-mocha": "^2.0.0",

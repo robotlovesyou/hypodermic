@@ -451,4 +451,17 @@ describe('Module#factory', function () {
 
 });
 
+describe('$container', function () {
+  describe('Factory Module with a $container dependency', function () {
+    it('is provided with an instance of the $container module');
+  });
+
+  describe('$container instance', function () {
+    describe('#resolve', function () {
+      it('exists');
+      it('returns an instance of the requested module');
+    });
+  });
+});
+
 runTests();
