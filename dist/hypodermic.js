@@ -134,134 +134,161 @@ var Container = (function () {
   return Container;
 })();
 
+var Module = (function () {
+  function Module(name, moduleObject) {
+    _babelHelpers.classCallCheck(this, Module);
 
+    if (typeof name !== "string") {
+      throw new HypodermicError("Module constructor requires name of type string");
+    }
 
+    if (typeof moduleObject !== "object") {
+      throw new HypodermicError("Module constructor requires a moduleObject of type object");
+    }
 
-function Module(name, moduleObject) {
-  if (typeof name !== "string") {
-    throw new HypodermicError("Module constructor requires name of type string");
+    if (!this._validateModuleObject(moduleObject)) {
+      throw new HypodermicError("moduleObjectRequires either " + "a value property {any} or a dependencies property {[string]} AND" + "a factory property {function}");
+    }
+
+    if (moduleObject.hasOwnProperty("value")) {
+      this._originalValue = this._copyValue(moduleObject.value);
+    } else {
+      this._dependencies = moduleObject.dependencies.slice();
+      this._factory = moduleObject.factory;
+    }
+
+    this._name = name;
   }
 
-  if (typeof moduleObject !== "object") {
-    throw new HypodermicError("Module constructor requires a moduleObject of type object");
-  }
-
-  if (!this._validateModuleObject(moduleObject)) {
-    throw new HypodermicError("moduleObjectRequires either " + "a value property {any} or a dependencies property {[string]} AND" + "a factory property {function}");
-  }
-
-  if (moduleObject.hasOwnProperty("value")) {
-    this._originalValue = this._copyValue(moduleObject.value);
-  } else {
-    this._dependencies = moduleObject.dependencies.slice();
-    this._factory = moduleObject.factory;
-  }
-
-  this._name = name;
-  this._defineProperties();
-
-}
-
-Module.prototype._defineProperties = function () {
-  Object.defineProperties(this, {
+  _babelHelpers.prototypeProperties(Module, null, {
     name: {
       get: function () {
         return this._name;
-      }
+      },
+      configurable: true
     },
     value: {
       get: function () {
         return this._originalValue;
-      }
+      },
+      configurable: true
     },
     dependencies: {
       get: function () {
-        return this._dependencies.slice();
-      }
+        if (this._dependencies && Array.isArray(this._dependencies)) {
+          return this._dependencies.slice();
+        }
+      },
+      configurable: true
     },
     factory: {
       get: function () {
         return this._factory;
-      }
+      },
+      configurable: true
     },
     isValueModule: {
       get: function () {
         return this._isValueModule();
-      }
+      },
+      configurable: true
     },
     isFactoryModule: {
       get: function () {
         return this._isFactoryModule();
-      }
+      },
+      configurable: true
     },
     isResolved: {
       get: function () {
         return this.hasOwnProperty("_resolvedFactory");
-      }
+      },
+      configurable: true
     },
     resolvedFactory: {
       get: function () {
         return this._resolvedFactory;
-      }
+      },
+      configurable: true
+    },
+    _isValueModule: {
+      value: function _isValueModule() {
+        return this.hasOwnProperty("_originalValue");
+      },
+      writable: true,
+      configurable: true
+    },
+    _isFactoryModule: {
+      value: function _isFactoryModule() {
+        return !this._isValueModule();
+      },
+      writable: true,
+      configurable: true
+    },
+    _validateModuleObject: {
+      value: function _validateModuleObject(moduleObject) {
+        //the module object has a value property
+        return moduleObject.hasOwnProperty("value") || moduleObject.hasOwnProperty("dependencies") && Array.isArray(moduleObject.dependencies) && moduleObject.hasOwnProperty("factory") && typeof moduleObject.factory === "function";
+      },
+      writable: true,
+      configurable: true
+    },
+    _copyValue: {
+      value: function _copyValue(value) {
+        if (this._isPlainObject(value)) {
+          return this._deepCopyObject(value);
+        }
+
+        return value;
+      },
+      writable: true,
+      configurable: true
+    },
+    _deepCopyObject: {
+      value: function _deepCopyObject(object) {
+        var _this = this;
+        var copy = {};
+
+        _core.Object.keys(object).forEach(function (key) {
+          copy[key] = _this._deepCopyValue(object[key]);
+        });
+
+        return copy;
+      },
+      writable: true,
+      configurable: true
+    },
+    _deepCopyValue: {
+      value: function _deepCopyValue(value) {
+        if (this._isPlainObject(value)) {
+          return this._deepCopyObject(value);
+        } else if (Array.isArray(value)) {
+          return value.slice();
+        }
+
+        return value;
+      },
+      writable: true,
+      configurable: true
+    },
+    _isPlainObject: {
+      value: function _isPlainObject(object) {
+        return typeof object === "object" && object.constructor === Object;
+      },
+      writable: true,
+      configurable: true
+    },
+    setResolvedFactory: {
+      value: function setResolvedFactory(value) {
+        this._resolvedFactory = value;
+      },
+      writable: true,
+      configurable: true
     }
   });
-};
 
-
-Module.prototype._isValueModule = function () {
-  return this.hasOwnProperty("_originalValue");
-};
-
-
-Module.prototype._isFactoryModule = function () {
-  return !this._isValueModule();
-};
-
-
-Module.prototype._validateModuleObject = function (moduleObject) {
-  //the module object has a value property
-  return moduleObject.hasOwnProperty("value") || moduleObject.hasOwnProperty("dependencies") && Array.isArray(moduleObject.dependencies) && moduleObject.hasOwnProperty("factory") && typeof moduleObject.factory === "function";
-};
-
-
-Module.prototype._copyValue = function (value) {
-  if (this._isPlainObject(value)) {
-    return this._deepCopyObject(value);
-  }
-
-  return value;
-};
-
-
-Module.prototype._deepCopyObject = function (object) {
-  var copy = {};
-
-  _core.Object.keys(object).forEach((function (key) {
-    copy[key] = this._deepCopyValue(object[key]);
-  }).bind(this));
-
-  return copy;
-};
-
-
-Module.prototype._deepCopyValue = function (value) {
-  if (this._isPlainObject(value)) {
-    return this._deepCopyObject(value);
-  } else if (Array.isArray(value)) {
-    return value.slice();
-  }
-
-  return value;
-};
-
-
-Module.prototype._isPlainObject = function (object) {
-  return typeof object === "object" && object.constructor === Object;
-};
-
-Module.prototype.setResolvedFactory = function (value) {
-  this._resolvedFactory = value;
-};
+  return Module;
+})();
 
 module.exports = {
   Container: Container,

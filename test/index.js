@@ -335,18 +335,19 @@ describe('Module instances', function () {
 
   beforeEach(function () {
     module = new Module('aName', {value: 'wibble'});
+    factoryModule = new Module('anotherName', {factory: function () {return true;}, dependencies: ['aName']});
   });
 
-  it('exposes a property "value"', function () {
-    expect(module.hasOwnProperty('value')).to.equal(true);
+  it('expose a property "value"', function () {
+    expect(module.value).to.equal('wibble');
   });
 
-  it('exposes a property "dependencies"', function () {
-    expect(module.hasOwnProperty('dependencies')).to.equal(true);
+  it('expose a property "dependencies"', function () {
+    expect(factoryModule.dependencies).to.deep.equal(['aName']);
   });
 
-  it('exposes a property "factory"', function () {
-    expect(module.hasOwnProperty('factory')).to.equal(true);
+  it('expose a property "factory"', function () {
+    expect(factoryModule.factory()).to.equal(true);
   });
 
 });

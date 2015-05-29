@@ -102,151 +102,132 @@ class Container {
     this._resetResolutionCountMap();
     return this._resolve(name);
   }
-  
-}
-
-
-function Module(name, moduleObject) {
-  if(typeof name !== 'string') {
-    throw new HypodermicError('Module constructor requires name of type string');
-  }
-
-  if(typeof moduleObject !== 'object') {
-    throw new HypodermicError(
-        'Module constructor requires a moduleObject of type object');
-  }
-
-  if(!this._validateModuleObject(moduleObject)) {
-    throw new HypodermicError('moduleObjectRequires either ' +
-    'a value property {any} or a dependencies property {[string]} AND' +
-    'a factory property {function}');
-  }
-
-  if(moduleObject.hasOwnProperty('value')) {
-    this._originalValue = this._copyValue(moduleObject.value);
-  } else {
-    this._dependencies = moduleObject.dependencies.slice();
-    this._factory = moduleObject.factory;
-  }
-
-  this._name = name;
-  this._defineProperties();
-
 
 }
 
-Module.prototype._defineProperties = function () {
-  Object.defineProperties(this, {
-    name: {
-      get: function () {
-        return this._name;
-      }
-    },
-    value: {
-      get: function () {
-        return this._originalValue;
-      }
-    },
-    dependencies: {
-      get: function () {
-        return this._dependencies.slice();
-      }
-    },
-    factory: {
-      get: function () {
-        return this._factory;
-      }
-    },
-    isValueModule: {
-      get: function () {
-        return this._isValueModule();
-      }
-    },
-    isFactoryModule: {
-      get: function () {
-        return this._isFactoryModule();
-      }
-    },
-    isResolved: {
-      get: function () {
-        return this.hasOwnProperty('_resolvedFactory');
-      }
-    },
-    resolvedFactory: {
-      get: function () {
-        return this._resolvedFactory;
-      }
+
+class Module {
+  constructor(name, moduleObject) {
+    if(typeof name !== 'string') {
+      throw new HypodermicError('Module constructor requires name of type string');
     }
-  });
-};
 
+    if(typeof moduleObject !== 'object') {
+      throw new HypodermicError(
+          'Module constructor requires a moduleObject of type object');
+    }
 
-Module.prototype._isValueModule = function () {
-  return this.hasOwnProperty('_originalValue');
-};
+    if(!this._validateModuleObject(moduleObject)) {
+      throw new HypodermicError('moduleObjectRequires either ' +
+      'a value property {any} or a dependencies property {[string]} AND' +
+      'a factory property {function}');
+    }
 
+    if(moduleObject.hasOwnProperty('value')) {
+      this._originalValue = this._copyValue(moduleObject.value);
+    } else {
+      this._dependencies = moduleObject.dependencies.slice();
+      this._factory = moduleObject.factory;
+    }
 
-Module.prototype._isFactoryModule = function () {
-  return !this._isValueModule();
-};
-
-
-Module.prototype._validateModuleObject = function (moduleObject) {
-  //the module object has a value property
-  return moduleObject.hasOwnProperty('value') ||
-
-  //or the module object has a dependencies array AND a factory function
-  (
-    moduleObject.hasOwnProperty('dependencies') &&
-    Array.isArray(moduleObject.dependencies) &&
-    moduleObject.hasOwnProperty('factory') &&
-    typeof moduleObject.factory === 'function'
-  );
-};
-
-
-Module.prototype._copyValue = function (value) {
-  if(this._isPlainObject(value)) {
-    return this._deepCopyObject(value);
+    this._name = name;
   }
 
-  return value;
-};
 
-
-Module.prototype._deepCopyObject = function (object) {
-  var copy = {};
-
-  Object.keys(object).forEach(function (key) {
-    copy[key] = this._deepCopyValue(object[key]);
-  }.bind(this));
-
-  return copy;
-};
-
-
-Module.prototype._deepCopyValue = function(value) {
-  if(this._isPlainObject(value)) {
-    return this._deepCopyObject(value);
-  } else if (Array.isArray(value)) {
-    return value.slice();
+  get name() {
+    return this._name;
   }
 
-  return value;
+  get value() {
+    return this._originalValue;
+  }
 
-};
+  get dependencies() {
+    if (this._dependencies && Array.isArray(this._dependencies)) {
+      return this._dependencies.slice();
+    }
+  }
 
+  get factory() {
+    return this._factory;
+  }
 
-Module.prototype._isPlainObject = function (object) {
-  return typeof object === 'object' && object.constructor === Object;
-};
+  get isValueModule() {
+    return this._isValueModule();
+  }
 
-Module.prototype.setResolvedFactory = function (value) {
-  this._resolvedFactory = value;
-};
+  get isFactoryModule() {
+    return this._isFactoryModule();
+  }
+
+  get isResolved() {
+    return this.hasOwnProperty('_resolvedFactory');
+  }
+
+  get resolvedFactory() {
+    return this._resolvedFactory;
+  }
+
+  _isValueModule() {
+    return this.hasOwnProperty('_originalValue');
+  }
+
+  _isFactoryModule() {
+    return !this._isValueModule();
+  }
+
+  _validateModuleObject(moduleObject) {
+    //the module object has a value property
+    return moduleObject.hasOwnProperty('value') ||
+
+    //or the module object has a dependencies array AND a factory function
+    (
+      moduleObject.hasOwnProperty('dependencies') &&
+      Array.isArray(moduleObject.dependencies) &&
+      moduleObject.hasOwnProperty('factory') &&
+      typeof moduleObject.factory === 'function'
+    );
+  }
+
+  _copyValue(value) {
+    if(this._isPlainObject(value)) {
+      return this._deepCopyObject(value);
+    }
+
+    return value;
+  }
+
+  _deepCopyObject(object) {
+    var copy = {};
+
+    Object.keys(object).forEach((key) => {
+      copy[key] = this._deepCopyValue(object[key]);
+    });
+
+    return copy;
+  }
+
+  _deepCopyValue(value) {
+    if(this._isPlainObject(value)) {
+      return this._deepCopyObject(value);
+    } else if (Array.isArray(value)) {
+      return value.slice();
+    }
+
+    return value;
+  }
+
+  _isPlainObject(object) {
+    return typeof object === 'object' && object.constructor === Object;
+  }
+
+  setResolvedFactory(value) {
+    this._resolvedFactory = value;
+  }
+}
 
 module.exports = {
-  Container: Container,
-  HypodermicError: HypodermicError,
-  Module: Module
+  Container,
+  HypodermicError,
+  Module
 };
